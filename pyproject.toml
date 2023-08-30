@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0","jaxlib","jax"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seabed"
+version = "0.1.0"
+authors = [
+  { name="Paul Kairys", email="pkairys@anl.gov" },
+]
+description = "SEquantial Analysis and Bayesian Experimental Design powered by JAX"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: BSD-3",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Statistics",
+    "Topic :: Scientific/Engineering :: Machine Learning",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    'Development Status :: 4 - Beta'
+]
+
+[project.urls]
+"Homepage" = "https://github.com/MCS-Quantum/seabed"
+"Bug Tracker" = "https://github.com/MCS-Quantum/seabed/issues"
