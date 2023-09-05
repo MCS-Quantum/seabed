@@ -13,9 +13,7 @@ pip3 install .
 
 WARNINGS:
 
-Documentation is lacking but being added and breaking changes are likely. 
-
-The software has not been benchmarked thoroughly, either so use at your own risk. 
+This software is actively being developed and documentation/benchmarks are poor at the moment. 
 
 
 ## History 
