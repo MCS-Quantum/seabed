@@ -90,8 +90,8 @@ class SimulatedModel(AbstractBayesianModel):
             def precompute_function(oneinput,oneparam):
                 d = oneparam.shape[0]
                 params = oneparam.reshape((d,1))
-                ls = multiparameter_precompute_function(oneinput,params)
-                return ls[0]
+                pdata = multiparameter_precompute_function(oneinput,params)
+                return pdata[...,0]
             
             self.precompute_function = precompute_function
             self.precompute_oneinput_multiparams = multiparameter_precompute_function
