@@ -34,6 +34,10 @@ def diffable_plogp(p):
 diffable_plogp_vec = jit(vmap(diffable_plogp,in_axes=(0,)))
 
 @jit
+def entropy(ws):
+    return -jnp.sum(diffable_plogp_vec(ws))
+
+@jit
 def entropy_change(current_particles,current_weights,likelihoods):
     """Computes the difference in shannon entropy between posterior and prior
     particle distributions with the same particles but different weights.
@@ -50,11 +54,12 @@ def entropy_change(current_particles,current_weights,likelihoods):
 
     Returns
     -------
-    _type_
-        _description_
+    Flot
+        returns the change in entropy if bayesian updating were performed using 
+        the given likelihoods.
     """    
     new_weights = current_weights*likelihoods
     new_weights = new_weights/jnp.sum(new_weights)
-    H_old = -jnp.sum(diffable_plogp_vec(current_weights))
-    H_new = -jnp.sum(diffable_plogp_vec(new_weights))
+    H_old = entropy(current_weights)
+    H_new = entropy(new_weights)
     return H_new-H_old

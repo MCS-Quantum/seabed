@@ -11,8 +11,9 @@
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 import jax.numpy as jnp
-from jax import random, jit
+from jax import random, jit, vmap
 from .samplers import sample_particles, Liu_West_resampler
+from .utility_measures import entropy
 
 
 class ParticlePDF:
@@ -105,6 +106,31 @@ class ParticlePDF:
             return raw_covariance.reshape((1, 1))
         else:
             return raw_covariance
+        
+    @jit
+    def expectation(self,f):
+        """Calculates the expected value of some function `f` on the probability distribution.
+        
+        Parameters
+        ----------
+        f : Function
+            A function that takes in a single parameter vector.
+
+        Returns
+        -------
+        Float
+            The expected value of `f`. 
+        """
+        
+        vf = jit(vmap(f,in_axes=1))
+        vs = vf(self.particles)
+        return jnp.dot(self.particles,vs)
+    
+    @jit
+    def entropy(self):
+        """Calculates the Shannon entropy of the ParticlePDF"""
+
+        return entropy(self.weights)
 
     @jit
     def update_weights(self, likelihoods):
