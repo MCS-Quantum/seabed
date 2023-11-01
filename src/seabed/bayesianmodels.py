@@ -39,6 +39,7 @@ class SimulatedModel(AbstractBayesianModel):
                  precompute_function = None, 
                  multiparameter_precompute_function = None,
                  simulation_likelihood = None,
+                 latest_precomputed_data = None,
                  **kwargs):
         """Initialize an SimulatedModel object.
 
@@ -83,7 +84,7 @@ class SimulatedModel(AbstractBayesianModel):
         self.simulation_likelihood = simulation_likelihood
         self.sim_likelihood_oneinput_oneoutput_multiparams = vmap(simulation_likelihood,in_axes=(None,None,-1,-1))
         self.sim_likelihood_oneinput_multioutput_multiparams = vmap(self.sim_likelihood_oneinput_oneoutput_multiparams,in_axes=(None,-1,None,None), out_axes=-1)
-        self.latest_precomputed_data = None
+        self.latest_precomputed_data = latest_precomputed_data
 
         if precompute_function:
             self.precompute_function = precompute_function
@@ -195,6 +196,7 @@ class SimulatedModel(AbstractBayesianModel):
         aux_data = {'precompute_function':self.precompute_function, 
                     'simulation_likelihood':self.simulation_likelihood,
                     'multiparameter_precompute_function':self.precompute_oneinput_multiparams,
+                    'latest_precomputed_data':self.latest_precomputed_data,
                     **self.lower_kwargs
                    }
         return (children, aux_data)

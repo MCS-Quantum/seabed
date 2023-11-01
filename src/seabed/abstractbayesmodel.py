@@ -34,6 +34,9 @@ class AbstractBayesianModel(ParticlePDF):
                  multiparameter_likelihood_function=None,
                  multiparameter_multioutput_likelihood_function=None,
                  utility_measure = entropy_change, 
+                 input_size = None,
+                 parameter_size = None,
+                 output_size = None,
                  **kwargs):
         """Initialize an AbstractBayesianModel object.
 
@@ -71,6 +74,12 @@ class AbstractBayesianModel(ParticlePDF):
         utility_measure : Function, optional
             A measure of experimental utility with the signature
              ``U(current_particles,current_weights,likelihoods)``, by default entropy_change
+        input_size : Int, optional
+            The size of input vectors, by default None
+        parameter_size : Int, optional
+            The size of input vectors, by default None
+        output_size : Int, optional
+            The size of input vectors, by default None
 
         Raises
         ------
@@ -139,6 +148,9 @@ class AbstractBayesianModel(ParticlePDF):
         self.utility_measure = utility_measure
         self.multioutput_utility = vmap(self.utility_measure,in_axes=(None,None,-1))
         self.expected_outputs = expected_outputs
+        self.input_size = input_size
+        self.parameter_size = parameter_size
+        self.output_size = output_size
 
 
     def updated_weights_from_experiment(self, oneinput, oneoutput):
@@ -341,6 +353,8 @@ class AbstractBayesianModel(ParticlePDF):
         output = random.choice(subkey,self.expected_outputs,p=ls,axis=1)
         return output
     
+    
+    
     def sample_outputs(self, inputs, oneparam):
         """Samples from expected outputs of a process
         with multiple inputs and oneparameter.
@@ -369,7 +383,10 @@ class AbstractBayesianModel(ParticlePDF):
         aux_data = {'likelihood_function':self.likelihood_function,
                     'multiparameter_likelihood_function':self.oneinput_oneoutput_multiparams,
                     'multiparameter_multioutput_likelihood_function':self.oneinput_multioutput_multiparams,
-                    'utility_measure':self.utility_measure, **self.lower_kwargs}
+                    'utility_measure':self.utility_measure,
+                    'input_size':self.input_size,
+                    'parameter_size':self.parameter_size,
+                    'output_size':self.output_size, **self.lower_kwargs}
         return (children, aux_data)
     
     @classmethod

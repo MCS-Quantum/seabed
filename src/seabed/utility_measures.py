@@ -42,6 +42,9 @@ def entropy_change(current_particles,current_weights,likelihoods):
     """Computes the difference in shannon entropy between posterior and prior
     particle distributions with the same particles but different weights.
 
+    Mathematically, let P be the prior and Q be the posterior, then:
+    entropy_change = H(Q) - H(P).
+
     Parameters
     ----------
     current_particles : Array
@@ -62,4 +65,4 @@ def entropy_change(current_particles,current_weights,likelihoods):
     new_weights = new_weights/jnp.sum(new_weights)
     H_old = entropy(current_weights)
     H_new = entropy(new_weights)
-    return H_new-H_old
+    return H_new - H_old
