@@ -168,17 +168,13 @@ class SimulatedModel(AbstractBayesianModel):
         weights = self.update_weights(ls)
         return weights
     
-    def bayesian_update(self, oneinput, oneoutput, precomputed_data=None, use_latest_precompute=False):
+    def bayesian_update(self, oneinput, oneoutput, use_latest_precompute=False):
         """Refines the parameter probability distribution function given an
         experimental input and output, resamples if needed, and updates
         the AbstractBayesianModel.
 
         Parameters
         ----------
-        precompute_data : Array, optional
-            Specifies the precomputed data to use for computing likelihoods, regardless
-            of particle values. 
-
         use_latest_precompute : bool, optional
             Specifies whether or not the most recently cached precompute data
             is used for likelihood computation, by default False.
@@ -186,12 +182,11 @@ class SimulatedModel(AbstractBayesianModel):
             then the previously cached precompute results are input into the 
             simulation_likelihood function.
         """
-        if precomputed_data:
-            self.weights = self.updated_weights_from_precompute(oneinput, oneoutput, self.particles, precomputed_data)
-        elif use_latest_precompute and not self.just_resampled:
+        
+        if use_latest_precompute and not self.just_resampled:
             self.weights = self.updated_weights_from_precompute(oneinput, oneoutput, self.particles, self.latest_precomputed_data)
         else:
-            self.weights, self.latest_precomputed_data = self.updated_weights_precomputes_from_experiment(oneinput, oneoutput)
+            self.weights, self.latest_precomputed_data = self.updated_weights_precomputes_from_experiment(oneinput, oneoutput, self.particles)
         
         if self.tuning_parameters['auto_resample']:
             self.resample_test()
