@@ -10,7 +10,7 @@
 # 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
-from jax import vmap
+from jax import vmap, jit
 
 from .abstractbayesmodel import AbstractBayesianModel
 
@@ -123,8 +123,8 @@ class SimulatedModel(AbstractBayesianModel):
         else:
             raise ValueError("No precompute function provided")
         
-    
-    def updated_weights_precomputes_from_experiment(self, oneinput, oneoutput):
+    @jit
+    def updated_weights_precomputes_from_experiment(self, oneinput, oneoutput, particles):
         """Returns the updated particle weights and precomputation data from a single
         input vector and output vector.
 
@@ -142,13 +142,13 @@ class SimulatedModel(AbstractBayesianModel):
         Array
             An array of precomputation data.
         """        
-        precomputes = self.precompute_oneinput_multiparams(oneinput,self.particles)
-        ls = self.sim_likelihood_oneinput_oneoutput_multiparams(oneinput, oneoutput, self.particles, precomputes)
+        precomputes = self.precompute_oneinput_multiparams(oneinput, particles)
+        ls = self.sim_likelihood_oneinput_oneoutput_multiparams(oneinput, oneoutput, particles, precomputes)
         weights = self.update_weights(ls)
         return weights, precomputes
         
-    
-    def updated_weights_from_precompute(self, oneinput, oneoutput):
+    @jit
+    def updated_weights_from_precompute(self, oneinput, oneoutput, particles, precomputed_data):
         """Returns the updated particle weights using the most recently cached
         precompute data. 
 
@@ -164,17 +164,21 @@ class SimulatedModel(AbstractBayesianModel):
         Vector
             A vector of normalized particle weights.
         """        
-        ls = self.sim_likelihood_oneinput_oneoutput_multiparams(oneinput, oneoutput, self.particles, self.latest_precomputed_data)
+        ls = self.sim_likelihood_oneinput_oneoutput_multiparams(oneinput, oneoutput, particles, precomputed_data)
         weights = self.update_weights(ls)
         return weights
-        
-    def bayesian_update(self, oneinput, oneoutput, use_latest_precompute=False):
+    
+    def bayesian_update(self, oneinput, oneoutput, precomputed_data=None, use_latest_precompute=False):
         """Refines the parameter probability distribution function given an
         experimental input and output, resamples if needed, and updates
         the AbstractBayesianModel.
 
         Parameters
         ----------
+        precompute_data : Array, optional
+            Specifies the precomputed data to use for computing likelihoods, regardless
+            of particle values. 
+
         use_latest_precompute : bool, optional
             Specifies whether or not the most recently cached precompute data
             is used for likelihood computation, by default False.
@@ -182,9 +186,10 @@ class SimulatedModel(AbstractBayesianModel):
             then the previously cached precompute results are input into the 
             simulation_likelihood function.
         """
-        
-        if use_latest_precompute and not self.just_resampled:
-            self.weights = self.updated_weights_from_precompute(oneinput, oneoutput)
+        if precomputed_data:
+            self.weights = self.updated_weights_from_precompute(oneinput, oneoutput, self.particles, precomputed_data)
+        elif use_latest_precompute and not self.just_resampled:
+            self.weights = self.updated_weights_from_precompute(oneinput, oneoutput, self.particles, self.latest_precomputed_data)
         else:
             self.weights, self.latest_precomputed_data = self.updated_weights_precomputes_from_experiment(oneinput, oneoutput)
         
