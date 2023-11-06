@@ -121,7 +121,6 @@ class SimulatedModel(AbstractBayesianModel):
         else:
             raise ValueError("No precompute function provided")
         
-    @jit
     def updated_weights_precomputes_from_experiment(self, oneinput, oneoutput, particles):
         """Returns the updated particle weights and precomputation data from a single
         input vector and output vector.
@@ -132,6 +131,8 @@ class SimulatedModel(AbstractBayesianModel):
             An input vector
         oneoutput : Vector
             An output vector
+        particles :  Array
+            An array of particles
 
         Returns
         -------
@@ -145,7 +146,6 @@ class SimulatedModel(AbstractBayesianModel):
         weights = self.update_weights(ls)
         return weights, precomputes
         
-    @jit
     def updated_weights_from_precompute(self, oneinput, oneoutput, particles, precomputed_data):
         """Returns the updated particle weights using the most recently cached
         precompute data. 
