@@ -86,19 +86,7 @@ class SimulatedModel(AbstractBayesianModel):
         self.sim_likelihood_oneinput_multioutput_multiparams = vmap(self.sim_likelihood_oneinput_oneoutput_multiparams,in_axes=(None,-1,None,None), out_axes=-1)
         self.latest_precomputed_data = latest_precomputed_data
 
-        if precompute_function:
-            self.precompute_function = precompute_function
-            self.precompute_oneinput_multiparams = vmap(precompute_function,in_axes=(None,1),out_axes=(-1))
-
-            
-            def likelihood(oneinput_vec,oneoutput_vec,oneparameter_vec):
-                precompute_data = precompute_function(oneinput_vec,oneparameter_vec)
-                return simulation_likelihood(oneinput_vec,oneoutput_vec,oneparameter_vec,precompute_data)
-            
-            AbstractBayesianModel.__init__(self, key, particles, weights, expected_outputs,
-                                        likelihood_function=likelihood,**kwargs)
-
-        elif multiparameter_precompute_function:
+        if multiparameter_precompute_function:
 
             def precompute_function(oneinput,oneparam):
                 d = oneparam.shape[0]
@@ -119,7 +107,17 @@ class SimulatedModel(AbstractBayesianModel):
                                         multiparameter_multioutput_likelihood_function=multiparameter_multioutput_likelihood_function
                                         ,**kwargs)
 
+        elif precompute_function:
+            self.precompute_function = precompute_function
+            self.precompute_oneinput_multiparams = vmap(precompute_function,in_axes=(None,1),out_axes=(-1))
 
+            
+            def likelihood(oneinput_vec,oneoutput_vec,oneparameter_vec):
+                precompute_data = precompute_function(oneinput_vec,oneparameter_vec)
+                return simulation_likelihood(oneinput_vec,oneoutput_vec,oneparameter_vec,precompute_data)
+            
+            AbstractBayesianModel.__init__(self, key, particles, weights, expected_outputs,
+                                        likelihood_function=likelihood,**kwargs)
         else:
             raise ValueError("No precompute function provided")
         
