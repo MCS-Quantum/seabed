@@ -40,7 +40,6 @@ class SimulatedModel(AbstractBayesianModel):
                  precompute_function = None, 
                  multiparameter_precompute_function = None,
                  simulation_likelihood = None,
-                 latest_precomputed_data = None,
                  **kwargs):
         """Initialize an SimulatedModel object.
 
@@ -61,15 +60,11 @@ class SimulatedModel(AbstractBayesianModel):
               ``F(oneinput_vector,oneparameter_vector)``
             runs an expensive computation that will be passed
             into the simulation_likelihood function to calculate likelihoods. 
-            The latest precomputation results are cached for future re-use 
-            to minimize computational overhead, by default None
         multiparameter_precompute_function : Function
             The precomputation function with function singature
               ``F(oneinput_vector, multiple_parameter_vectors)``
             runs an expensive computation that will be passed
-            into the simulation_likelihood function to calculate likelihoods. 
-            The latest precomputation results are cached for future re-use 
-            to minimize computational overhead, by default None
+            into the simulation_likelihood function to calculate likelihoods.
         simulation_likelihood : Function
             A computationally inexpensive function with the signature
             ``G(oneinput_vector, oneoutput_vector, oneparameter_vector, precompute data)``
@@ -85,7 +80,6 @@ class SimulatedModel(AbstractBayesianModel):
         self.simulation_likelihood = simulation_likelihood
         self.sim_likelihood_oneinput_oneoutput_multiparams = vmap(simulation_likelihood,in_axes=(None,None,-1,-1))
         self.sim_likelihood_oneinput_multioutput_multiparams = vmap(self.sim_likelihood_oneinput_oneoutput_multiparams,in_axes=(None,-1,None,None), out_axes=-1)
-        self.latest_precomputed_data = latest_precomputed_data
 
         if multiparameter_precompute_function:
 
@@ -171,26 +165,29 @@ class SimulatedModel(AbstractBayesianModel):
         weights = self.update_weights(ls)
         return weights
     
-    def bayesian_update(self, oneinput, oneoutput, use_latest_precompute=False):
+    def bayesian_update(self, oneinput, oneoutput):
+        """Refines the parameter probability distribution function given an
+        experimental input and output, resamples if needed, and updates
+        the AbstractBayesianModel.
+        """
+        
+        precomputed_data = self.precompute_oneinput_multiparams(oneinput,self.particles)
+        
+        self.bayesian_update_from_preompute(oneinput,oneoutput, precomputed_data)
+
+    def bayesian_update_from_preompute(self, oneinput, oneoutput, precomputed_data):
         """Refines the parameter probability distribution function given an
         experimental input and output, resamples if needed, and updates
         the AbstractBayesianModel.
 
         Parameters
         ----------
-        use_latest_precompute : bool, optional
-            Specifies whether or not the most recently cached precompute data
-            is used for likelihood computation, by default False.
-            If use_latest_precompute=True and the ParticlePDF hasn't been resampled
-            then the previously cached precompute results are input into the 
-            simulation_likelihood function.
+        precomputed_data : Array
+            An arrary 
         """
         
-        if use_latest_precompute and not self.just_resampled:
-            self.weights = self.updated_weights_from_precompute(oneinput, oneoutput, self.particles, self.latest_precomputed_data)
-        else:
-            self.weights, self.latest_precomputed_data = self.updated_weights_precomputes_from_experiment(oneinput, oneoutput, self.particles)
-        
+        self.weights = self.updated_weights_from_precompute(oneinput, oneoutput, self.particles, precomputed_data)
+    
         if self.tuning_parameters['auto_resample']:
             self.resample_test()
 
@@ -199,7 +196,6 @@ class SimulatedModel(AbstractBayesianModel):
         aux_data = {'precompute_function':self.precompute_function, 
                     'simulation_likelihood':self.simulation_likelihood,
                     'multiparameter_precompute_function':self.precompute_oneinput_multiparams,
-                    'latest_precomputed_data':self.latest_precomputed_data,
                     **self.lower_kwargs
                    }
         return (children, aux_data)

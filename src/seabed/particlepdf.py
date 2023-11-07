@@ -199,7 +199,7 @@ class ParticlePDF:
         Returns
         -------
         Array
-            Newly sample particles
+            Newly sampled particles
         
         Array
             New particle weights
