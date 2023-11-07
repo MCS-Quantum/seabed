@@ -10,7 +10,8 @@
 # 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
-from jax import vmap, jit
+from jax import vmap
+import jax.numpy as jnp
 
 from .abstractbayesmodel import AbstractBayesianModel
 
@@ -143,6 +144,8 @@ class SimulatedModel(AbstractBayesianModel):
         """        
         precomputes = self.precompute_oneinput_multiparams(oneinput, particles)
         ls = self.sim_likelihood_oneinput_oneoutput_multiparams(oneinput, oneoutput, particles, precomputes)
+        if jnp.any(jnp.isnan(ls)):
+            raise ValueError("NaNs detected in likelihood calculation")
         weights = self.update_weights(ls)
         return weights, precomputes
         
@@ -163,6 +166,8 @@ class SimulatedModel(AbstractBayesianModel):
             A vector of normalized particle weights.
         """        
         ls = self.sim_likelihood_oneinput_oneoutput_multiparams(oneinput, oneoutput, particles, precomputed_data)
+        if jnp.any(jnp.isnan(ls)):
+            raise ValueError("NaNs detected in likelihood calculation")
         weights = self.update_weights(ls)
         return weights
     

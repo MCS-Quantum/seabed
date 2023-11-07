@@ -166,18 +166,6 @@ class ParticlePDF:
         if self.tuning_parameters['auto_resample']:
             self.resample_test()
     
-    @jit
-    def n_eff(self):
-        """Calculates the number of effective particles.
-
-        Returns
-        -------
-        Float
-            The number of `effective` particles. 
-        """        
-        wsquared = jnp.square(self.weights)
-        return 1 / jnp.sum(wsquared)
-    
     def resample_test(self):        
         """Tests the distribution and performs a resampling if required.
 
@@ -186,7 +174,7 @@ class ParticlePDF:
         performs a resampling.  Sets ``just_resampled`` to ``True``.
         """
         threshold = self.tuning_parameters['resample_threshold']
-        n_eff = self.n_eff()
+        n_eff = 1/jnp.sum(jnp.square(self.weights))
         if n_eff / self.n_particles < threshold:
             key, subkey = random.split(self.key)
             self.particles, self.weights = self.resample(subkey)
