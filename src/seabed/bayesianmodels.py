@@ -193,13 +193,13 @@ class SimulatedModel(AbstractBayesianModel):
         if self.tuning_parameters['auto_resample']:
             self.resample_test()
 
-    @partial(jit,static_argnanes=['n_repeats'])
+    @partial(jit,static_argnames=['n_repeats'])
     def sample_output_kernel(self, key, oneinput, oneparam, n_repeats=1):
         pdata = self.precompute_function(oneinput,oneparam)
         ls = self.sim_likelihood_oneinput_multioutput_oneparam(oneinput,self.expected_outputs,oneparam,pdata)
         return random.choice(key,self.expected_outputs,shape=(n_repeats,),p=ls,axis=1)
     
-    @partial(jit,static_argnanes=['n_repeats'])
+    @partial(jit,static_argnames=['n_repeats'])
     def sample_outputs_kernel(self, keys, inputs, oneparam, n_repeats=1):
         f = jit(vmap(self.sample_output_kernel,in_axes=(0,1,None,None)),out_axes=1)
         outputs = f(keys,inputs,oneparam,n_repeats=n_repeats)
