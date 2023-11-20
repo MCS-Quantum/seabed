@@ -201,7 +201,7 @@ class SimulatedModel(AbstractBayesianModel):
     
     @partial(jit,static_argnames=['n_repeats'])
     def sample_outputs_kernel(self, keys, inputs, oneparam, n_repeats=1):
-        f = jit(vmap(self.sample_output_kernel,in_axes=(0,1,None),out_axes=1))
+        f = jit(vmap(self.sample_output_kernel,in_axes=(None,0,1,None),out_axes=1))
         outputs = f(keys,inputs,oneparam,n_repeats=n_repeats)
         return outputs
     
