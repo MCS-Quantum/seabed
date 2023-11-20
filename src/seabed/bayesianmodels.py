@@ -231,7 +231,7 @@ class SimulatedModel(AbstractBayesianModel):
         """        
         key, subkey = random.split(self.key)
         self.key = key
-        subkeys = random.split(subkey,n_repeats)
+        subkeys = random.split(subkey,inputs.shape[1])
         outputs = self.sample_outputs_kernel(subkeys,inputs,oneparam,n_repeats=n_repeats)
         return outputs
 
