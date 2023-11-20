@@ -199,12 +199,6 @@ class SimulatedModel(AbstractBayesianModel):
         ls = self.sim_likelihood_oneinput_multioutput_oneparam(oneinput,self.expected_outputs,oneparam,pdata)
         return random.choice(key,self.expected_outputs,shape=(n_repeats,),p=ls,axis=1)
     
-    @partial(jit,static_argnames=['n_repeats'])
-    def sample_outputs_kernel(self, keys, inputs, oneparam, n_repeats=1):
-        f = jit(vmap(self.sample_output_kernel,in_axes=(None,0,1,None),out_axes=1))
-        outputs = f(keys,inputs,oneparam,n_repeats=n_repeats)
-        return outputs
-    
     def sample_output(self, oneinput, oneparam, n_repeats=1):
         key, subkey = random.split(self.key)
         self.key = key
@@ -229,11 +223,12 @@ class SimulatedModel(AbstractBayesianModel):
         Array
             An array of vectors of outputs sampled with the defined likelihood.  
         """        
+        n_inputs =  inputs.shape[1]
         key, subkey = random.split(self.key)
         self.key = key
-        subkeys = random.split(subkey,inputs.shape[1])
-        outputs = self.sample_outputs_kernel(subkeys,inputs,oneparam,n_repeats=n_repeats)
-        return outputs
+        subkeys = random.split(subkey,n_inputs)
+        outputs = [self.sample_output_kernel(subkeys[i,:],inputs[:,i],oneparam,n_repeats=n_repeats) for i in range(n_inputs)]
+        return jnp.stack(outputs,axis=2)
 
     def _tree_flatten(self):
         children = (self.key, self.particles, self.weights, self.expected_outputs)  # arrays / dynamic values
