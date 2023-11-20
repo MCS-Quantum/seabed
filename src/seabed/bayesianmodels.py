@@ -10,8 +10,9 @@
 # 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
-from jax import vmap
+from jax import vmap,random,jit
 import jax.numpy as jnp
+from functools import partial
 
 from .abstractbayesmodel import AbstractBayesianModel
 
@@ -80,6 +81,7 @@ class SimulatedModel(AbstractBayesianModel):
         self.simulation_likelihood = simulation_likelihood
         self.sim_likelihood_oneinput_oneoutput_multiparams = vmap(simulation_likelihood,in_axes=(None,None,-1,-1))
         self.sim_likelihood_oneinput_multioutput_multiparams = vmap(self.sim_likelihood_oneinput_oneoutput_multiparams,in_axes=(None,-1,None,None), out_axes=-1)
+        self.sim_likelihood_oneinput_multioutput_oneparam = vmap(simulation_likelihood,in_axes=(None,-1,None,None))
 
         if multiparameter_precompute_function:
 
@@ -175,7 +177,7 @@ class SimulatedModel(AbstractBayesianModel):
         
         self.bayesian_update_from_preompute(oneinput,oneoutput, precomputed_data)
 
-    def bayesian_update_from_preompute(self, oneinput, oneoutput, precomputed_data):
+    def bayesian_update_from_precompute(self, oneinput, oneoutput, precomputed_data):
         """Refines the parameter probability distribution function given an
         experimental input and output, resamples if needed, and updates
         the AbstractBayesianModel.
@@ -190,6 +192,48 @@ class SimulatedModel(AbstractBayesianModel):
     
         if self.tuning_parameters['auto_resample']:
             self.resample_test()
+
+    @partial(jit,static_argnmanes=['n_repeats'])
+    def sample_output_kernel(self, key, oneinput, oneparam, n_repeats=1):
+        pdata = self.precompute_function(oneinput,oneparam)
+        ls = self.sim_likelihood_oneinput_multioutput_oneparam(oneinput,self.expected_outputs,oneparam,pdata)
+        return random.choice(key,self.expected_outputs,shape=(n_repeats,),p=ls,axis=1)
+    
+    @partial(jit,static_argnmanes=['n_repeats'])
+    def sample_outputs_kernel(self, keys, inputs, oneparam, n_repeats=1):
+        f = jit(vmap(self.sample_output_kernel,in_axes=(0,1,None,None)),out_axes=1)
+        outputs = f(keys,inputs,oneparam,n_repeats=n_repeats)
+        return outputs
+    
+    def sample_output(self, oneinput, oneparam, n_repeats=1):
+        key, subkey = random.split(self.key)
+        self.key = key
+        output = self.sample_output_kernel(subkey,oneinput,oneparam,n_repeats=n_repeats)
+        return output
+
+    def sample_outputs(self, inputs, oneparam, n_repeats=1):
+        """Samples from expected outputs of a process
+        with multiple inputs and oneparameter.
+
+        Useful for generating synthetic data. 
+
+        Parameters
+        ----------
+        inputs : Array
+            An array of input vectors. 
+        oneparam : Vector
+            A single parameter vector. 
+
+        Returns
+        -------
+        Array
+            An array of vectors of outputs sampled with the defined likelihood.  
+        """        
+        key, subkey = random.split(self.key)
+        self.key = key
+        subkeys = random.split(subkey,n_repeats)
+        outputs = self.sample_outputs_kernel(subkeys,inputs,oneparam,n_repeats=n_repeats)
+        return outputs
 
     def _tree_flatten(self):
         children = (self.key, self.particles, self.weights, self.expected_outputs)  # arrays / dynamic values
