@@ -154,7 +154,7 @@ def gauss_resampler(key, particles, weights, a=1, h=0.005):
     origin = jnp.zeros(ndim)
     key1, key2 = random.split(key)
     # coords is n_dims x n_particles
-    coords = sb.samplers.sample_particles(key1, particles, weights, n=num_particles).T
+    coords = sample_particles(key1, particles, weights, n=num_particles).T
     full_mean = jnp.average(particles, axis=1, weights=weights)
     full_cov = jnp.cov(particles, aweights=weights, ddof=0)
     kernel_cov = (h**2)*full_cov
