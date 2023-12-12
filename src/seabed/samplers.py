@@ -120,3 +120,47 @@ def Liu_West_resampler(key, particles, weights, a=0.98, scale=True):
             nudged = nudged + scaled_mean
 
     return nudged.T
+
+
+@partial(jit, static_argnames=['a','h'])
+def gauss_resampler(key, particles, weights, a=1, h=0.005):
+    """Provides an new array of particles that have been
+    resampled according to a gaussian-KDE-like process.
+
+    Parameters
+    ----------
+    key : jax.random.PRNGKey
+        The pseudo-random number generator key used to seed all 
+        jax random functions.
+    particles : Array
+        The set of particles initializes to initialize the distribution.
+        Has size ``n_dims``x``n_particles``. 
+    weights : Array
+        The set of weights for each particle. Has size (``n_particles``,). 
+    a : Float, optional
+        Determines the spread of the newly sampled particles about the previous 
+        particle locations. 
+    h : Float, optional
+        Determines whether or not the newly sampled distribution is 
+        contracted around the mean of the distribution to adjust for increased
+        variance during the resampling. 
+
+    Returns
+    -------
+    Array
+        An array of particles. 
+    """
+    ndim, num_particles = particles.shape
+    origin = jnp.zeros(ndim)
+    key1, key2 = random.split(key)
+    # coords is n_dims x n_particles
+    coords = sb.samplers.sample_particles(key1, particles, weights, n=num_particles).T
+    full_mean = jnp.average(particles, axis=1, weights=weights)
+    full_cov = jnp.cov(particles, aweights=weights, ddof=0)
+    kernel_cov = (h**2)*full_cov
+    kernel_means = a*coords+(1-a)*full_mean
+    new_particles = kernel_means+random.multivariate_normal(key2, origin, kernel_cov, shape=(num_particles,))
+    
+    
+
+    return new_particles.T

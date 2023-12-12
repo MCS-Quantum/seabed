@@ -12,7 +12,7 @@
 
 import jax.numpy as jnp
 from jax import random, jit, vmap
-from .samplers import sample_particles, Liu_West_resampler
+from .samplers import sample_particles, gauss_resampler
 from .utility_measures import entropy
 
 
@@ -32,9 +32,9 @@ class ParticlePDF:
     """
 
     def __init__(self, key, particles, weights, 
-                 resampler = Liu_West_resampler,
+                 resampler = gauss_resampler,
                  tuning_parameters = {'resample_threshold':0.5,'auto_resample':True},
-                 resampling_parameters = {'a':0.98, 'scale':True}, 
+                 resampling_parameters = {'a':0.98, 'h':0.005}, 
                  just_resampled=False, **kwargs):
         """Initialize a ParticlePDF object. 
 

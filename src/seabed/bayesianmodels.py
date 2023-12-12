@@ -205,31 +205,6 @@ class SimulatedModel(AbstractBayesianModel):
         output = self.sample_output_kernel(subkey,oneinput,oneparam,n_repeats=n_repeats)
         return output
 
-    def sample_outputs(self, inputs, oneparam, n_repeats=1):
-        """Samples from expected outputs of a process
-        with multiple inputs and oneparameter.
-
-        Useful for generating synthetic data. 
-
-        Parameters
-        ----------
-        inputs : Array
-            An array of input vectors. 
-        oneparam : Vector
-            A single parameter vector. 
-
-        Returns
-        -------
-        Array
-            An array of vectors of outputs sampled with the defined likelihood.  
-        """        
-        n_inputs =  inputs.shape[1]
-        key, subkey = random.split(self.key)
-        self.key = key
-        subkeys = random.split(subkey,n_inputs)
-        outputs = [self.sample_output_kernel(subkeys[i,:],inputs[:,i],oneparam,n_repeats=n_repeats) for i in range(n_inputs)]
-        return jnp.stack(outputs,axis=2)
-
     def _tree_flatten(self):
         children = (self.key, self.particles, self.weights, self.expected_outputs)  # arrays / dynamic values
         aux_data = {'precompute_function':self.precompute_function, 

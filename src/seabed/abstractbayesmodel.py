@@ -11,7 +11,7 @@
 # 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 import jax.numpy as jnp
-from jax import vmap, random
+from jax import vmap, random, jit
 
 from .particlepdf import ParticlePDF
 from .utility_measures import entropy_change
@@ -143,7 +143,7 @@ class AbstractBayesianModel(ParticlePDF):
 
         else:
             raise ValueError("No likelihood function provided")
-
+        
 
         self.utility_measure = utility_measure
         self.multioutput_utility = vmap(self.utility_measure,in_axes=(None,None,-1))
@@ -186,7 +186,7 @@ class AbstractBayesianModel(ParticlePDF):
         if self.tuning_parameters['auto_resample']:
             self.resample_test()
 
-    def batch_bayesian_update(self, inputset, outputset):
+    def bayesian_updates(self, inputset, outputset):
         """
         Refines the parameter probability distribution function given a set of
         experimental inputs and outputs, resamples as needed, and updates
@@ -195,6 +195,22 @@ class AbstractBayesianModel(ParticlePDF):
         n = inputset.shape[-1]
         for i in range(n):
             self.bayesian_update(inputset[:,i],outputset[:,i])
+
+    def batch_bayesian_update(self, inputset, outputset):
+        """
+        Refines the parameter probability distribution function given a set of
+        experimental inputs and outputs, resamples as needed, and updates
+        the AbstractBayesianModel.
+        """
+        f = jit(vmap(self.oneinput_oneoutput_multiparams,in_axes=(-1,-1,None),out_axes=-1))
+        ls = f(inputset,outputset,self.particles)
+        if jnp.any(jnp.isnan(ls)):
+            raise ValueError("NaNs detected in likelihood calculation")
+        batch_ls = jnp.prod(ls,axis=-1)
+        self.weights = self.update_weights(batch_ls)
+        
+        if self.tuning_parameters['auto_resample']:
+            self.resample_test()
       
     def _expected_utility(self,oneinput,particles,weights):
         """Computes the expected value of utility of a single input based on a
