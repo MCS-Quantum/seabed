@@ -77,7 +77,7 @@ class AbstractBayesianModel(ParticlePDF):
         input_size : Int, optional
             The size of input vectors, by default None
         parameter_size : Int, optional
-            The size of input vectors, by default None
+            The size of parameter vectors, by default None
         output_size : Int, optional
             The size of output vectors, by default None
 

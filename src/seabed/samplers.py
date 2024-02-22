@@ -138,12 +138,12 @@ def gauss_resampler(key, particles, weights, a=1, h=0.005):
     weights : Array
         The set of weights for each particle. Has size (``n_particles``,). 
     a : Float, optional
-        Determines the spread of the newly sampled particles about the previous 
-        particle locations. 
-    h : Float, optional
         Determines whether or not the newly sampled distribution is 
         contracted around the mean of the distribution to adjust for increased
         variance during the resampling. 
+    h : Float, optional
+        Determines the spread of the newly sampled particles about the previous 
+        particle locations. 
 
     Returns
     -------

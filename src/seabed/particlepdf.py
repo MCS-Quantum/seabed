@@ -34,7 +34,7 @@ class ParticlePDF:
     def __init__(self, key, particles, weights, 
                  resampler = gauss_resampler,
                  tuning_parameters = {'resample_threshold':0.5,'auto_resample':True},
-                 resampling_parameters = {'a':0.98, 'h':0.005}, 
+                 resampling_parameters = {'a':1, 'h':0.005}, 
                  just_resampled=False, **kwargs):
         """Initialize a ParticlePDF object. 
 
