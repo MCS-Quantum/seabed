@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="https://github.com/MCS-Quantum/seabed/blob/main/seabed_logo.png" width="500"/>
+</p>
 
 # SEquential Analysis and Bayesian Experimental Design powered by JAX
 
