@@ -113,7 +113,7 @@ def Liu_West_resampler(key, particles, weights, a=0.98, scale=True):
     # multivariate normal returns n_particles x n_dims array. ".T"
     # transposes to match coords shape.
     nudged = coords + random.multivariate_normal(key2, origin, newcovar,
-                                                       shape=(num_particles,))
+                                                       shape=(num_particles,), method = 'svd')
     
     if scale:
             nudged = nudged * a
@@ -159,7 +159,7 @@ def gauss_resampler(key, particles, weights, a=1, h=0.005):
     full_cov = jnp.cov(particles, aweights=weights, ddof=0)
     kernel_cov = (h**2)*full_cov
     kernel_means = a*coords+(1-a)*full_mean
-    new_particles = kernel_means+random.multivariate_normal(key2, origin, kernel_cov, shape=(num_particles,))
+    new_particles = kernel_means+random.multivariate_normal(key2, origin, kernel_cov, shape=(num_particles,), method = 'svd')
     
     
 
