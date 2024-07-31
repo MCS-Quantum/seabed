@@ -14,7 +14,7 @@ import jax.numpy as jnp
 from jax import vmap, random, jit
 
 from .particlepdf import ParticlePDF
-from .utility_measures import entropy_change
+from .utility_measures import entropy_based_utility
 
 class AbstractBayesianModel(ParticlePDF):
     """An abstract Bayesian probabilistic model for a system with 
@@ -33,7 +33,7 @@ class AbstractBayesianModel(ParticlePDF):
                  likelihood_function=None, 
                  multiparameter_likelihood_function=None,
                  multiparameter_multioutput_likelihood_function=None,
-                 utility_measure = entropy_change, 
+                 utility_measure = entropy_based_utility,
                  input_size = None,
                  parameter_size = None,
                  output_size = None,
@@ -257,7 +257,8 @@ class AbstractBayesianModel(ParticlePDF):
             The expected utility of each input.
         """        
         umap = vmap(self._expected_utility,in_axes=(1,None,None))
-        return umap(inputs,particles,weights)
+        utilities = umap(inputs,particles,weights)
+        return utilities
          
     
     def expected_utility(self,oneinput):
@@ -342,7 +343,62 @@ class AbstractBayesianModel(ParticlePDF):
         particles = self.particles[:,I]
         weights = self.weights[I]
         return self._expected_utilities(inputs,particles,weights)
-    
+
+    def sample_inputs(self, inputs, selection_size=1, k=10):
+        """Samples inputs by weighting selection towards inputs with
+        higher utility.
+
+        Parameters
+        ----------
+        inputs : Array
+            An array of possible inputs.
+        selection_size : Int, optional
+            The number of inputs to sample
+        k : Int, optional
+            A number of particles to use in the computation of the utility.
+
+        Returns
+        -------
+        Vector
+            The sampled inputs
+        """
+        utils = self.expected_utilities_k_particles(inputs, k)
+        chosen_indices = jnp.argsort(utils)[-selection_size:]
+        return inputs[:, chosen_indices]
+
+    def sample_inputs_with_variance(self, inputs, selection_size=1, k=10, narrowing_power=1, replace=True):
+        """Samples inputs by weighting selection towards inputs with
+        higher utility.
+
+        Parameters
+        ----------
+        inputs : Array
+            An array of possible inputs.
+        selection_size : Int, optional
+            The number of inputs to sample
+        k : Int, optional
+            A number of particles to use in the computation of the utility.
+        narrowing_power : Float, optional
+            The power which each utility is raised to. A higher narrowing
+            power reduces the variance of sampling
+        replace: Bool, optional
+            Determines whether an input can be chosen multiple times.
+
+        Returns
+        -------
+        Vector
+            The sampled inputs
+        """
+        utils = self.expected_utilities_k_particles(inputs, k)
+        min_util = jnp.min(utils)
+        likelihoods = (utils - min_util) ** narrowing_power
+        normalized_ls = likelihoods / jnp.sum(likelihoods)
+        self.key, subkey = random.split(self.key)
+        num_inputs = inputs.shape[-1]
+        chosen_indices = random.choice(subkey, num_inputs, shape=(selection_size,), p=normalized_ls, replace=replace)
+        chosen_inputs = inputs[:, chosen_indices]
+        return chosen_inputs
+
     def sample_output(self,oneinput,oneparam):
         """Samples from expected outputs of a process
         with oneinput and oneparameter.

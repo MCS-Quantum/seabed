@@ -66,3 +66,25 @@ def entropy_change(current_particles,current_weights,likelihoods):
     H_old = entropy(current_weights)
     H_new = entropy(new_weights)
     return H_new - H_old
+
+def entropy_based_utility(current_particles,current_weights,likelihoods):
+    """Returns utility as -1 times the change in Shannon entropy for a
+    given particle distribution.
+    By maximizing utility we then minimize the posterior entropy.
+
+    Parameters
+    ----------
+    current_particles : Array
+        The array of particles.
+    current_weights : Array
+        The current particle weights.
+    likelihoods : Array
+        An array of likelihoods which would be used to compute new
+        particle weights of the prior distribution.
+
+    Returns
+    -------
+    Flot
+        returns the utility found by the expected change in Shannon entropy.
+    """
+    return -1 * entropy_change(current_particles,current_weights,likelihoods)
